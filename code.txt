@@ -1,0 +1,173 @@
+#include <ESP32Servo.h>
+Servo myservo;
+#include <SoftwareSerial.h>
+SoftwareSerial bluetoothSerial(16, 17); // RX, TX (Change the pin numbers as needed)
+#define TRIG_PIN 14
+#define ECHO_PIN 12
+int Gas = 26;
+int Fire =27;
+int IN5 = 18;
+int IN1 = 34;  // Connect to IN1 on the motor driver
+int IN2 = 32; // Connect to IN2 on the motor driver
+int IN3 = 33;  // Connect to IN1 on the motor driver
+int IN4 = 25;
+int Relay = 15;
+int Gas_val ;
+int Fire_val ;
+long duration, distance;
+void setup() {
+  Serial.begin(9600);
+  myservo.attach(4);
+  bluetoothSerial.begin(9600); // Set the baud rate to match your Bluetooth module
+  //  servo.attach(servoPin);
+  pinMode(IN5, OUTPUT);
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+  pinMode(Relay, OUTPUT);
+  pinMode(Fire, INPUT);
+  pinMode(Gas, INPUT);
+  pinMode(TRIG_PIN, OUTPUT); // Set TRIG as output
+  pinMode(ECHO_PIN, INPUT);   // Set ECHO as input
+  Serial.println("title");
+
+}
+
+void loop() {
+
+  Gas_val = digitalRead(Gas);
+  Fire_val = digitalRead(Fire);
+
+  temp() ;
+  // Print the distance to the Serial Monitor
+  //  Serial.print("Distance: ");
+  //  Serial.print(distance);
+  //  Serial.println(" cm");
+  //  delay(1000);
+  Serial.println(" cm");
+  Serial.print("Gas_val: ");
+  Serial.print(Gas_val);
+  Serial.print("Fire_val: ");
+  Serial.print(Fire_val);
+
+  //  if (distance < 15) {
+  //    Serial.println("Obstacle Detected!");
+  //    bluetoothSerial.println("Obstacle Detected!");
+  //    digitalWrite(IN1, LOW);
+  //    digitalWrite(IN2, HIGH);
+  //    digitalWrite(IN3, HIGH);
+  //    digitalWrite(IN4, LOW);
+  //    delay(1000);
+  //    digitalWrite(IN1, LOW);
+  //    digitalWrite(IN2, LOW);
+  //    digitalWrite(IN3, LOW);
+  //    digitalWrite(IN4, LOW);
+  //  }
+
+  if ((Fire_val == 0) || (Gas_val == 0)) {
+    Serial.println("Fire Detected!");
+    bluetoothSerial.println("Fire Detected!");
+    digitalWrite(IN5, LOW);
+
+    digitalWrite(IN2, LOW);
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, LOW);
+    digitalWrite(Relay, LOW );
+    myservo.write(0);
+    delay(100);
+    myservo.write(60);
+    delay(100);
+    myservo.write(0);
+    delay(100);
+    myservo.write(60);
+    delay(100);
+    myservo.write(0);
+    delay(1000);
+  }
+  else {
+    digitalWrite(Relay, HIGH);
+  }
+
+  //  Serial.println("forword");
+  if (bluetoothSerial.available() > 0) {
+    char command = bluetoothSerial.read();
+    Serial.println("command!");
+    Serial.println(command);
+    executeCommand(command);
+  }
+}
+
+void executeCommand(char command) {
+  switch (command) {
+    case 'f':
+      Serial.println("forword");
+      digitalWrite(IN5, HIGH);
+      digitalWrite(IN2, LOW);
+      digitalWrite(IN3, HIGH);
+      digitalWrite(IN4, LOW);
+      break;
+
+    case 'b':
+      digitalWrite(IN5, LOW);
+      digitalWrite(IN2, HIGH);
+      digitalWrite(IN3, LOW);
+      digitalWrite(IN4, HIGH);
+      break;
+    case 'l':
+      digitalWrite(IN5, LOW);
+      digitalWrite(IN2, HIGH);
+      digitalWrite(IN3, HIGH);
+      digitalWrite(IN4, LOW);
+      break;
+
+    case 'r':
+      digitalWrite(IN5, HIGH);
+      digitalWrite(IN2, LOW);
+      digitalWrite(IN3, LOW);
+      digitalWrite(IN4, HIGH);
+      break;
+
+    case 's':
+      digitalWrite(IN5, LOW);
+      digitalWrite(IN2,  LOW);
+      digitalWrite(IN3, LOW);
+      digitalWrite(IN4, LOW);
+      break;
+
+  }
+
+}
+void temp() {
+  long duration, distance;
+  // Clear the TRIG pin
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  // Set the TRIG pin high for 10 microseconds
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+  // Read the ECHO pin
+  duration = pulseIn(ECHO_PIN, HIGH);
+  // Calculate the distance (in cm)
+  distance = (duration / 2) * 0.0343; // Speed of sound is 0.0343 cm/µs
+  // Print the distance to the Serial Monitor
+  Serial.print("Distance: ");
+  Serial.print(distance);
+  Serial.println(" cm");
+  delay(1000);
+
+  if (distance < 15) {
+    Serial.println("Obstacle Detected!");
+    bluetoothSerial.println("Obstacle Detected!");
+    digitalWrite(IN5, LOW);
+    digitalWrite(IN2, HIGH);
+    digitalWrite(IN3, HIGH);
+    digitalWrite(IN4, LOW);
+    delay(1000);
+    digitalWrite(IN5, LOW);
+    digitalWrite(IN2, LOW);
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, LOW);
+  }
+}
